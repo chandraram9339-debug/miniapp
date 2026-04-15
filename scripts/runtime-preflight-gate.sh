@@ -76,6 +76,20 @@ echo "step=compose_up_postgres"
 docker compose -f "${COMPOSE_FILE}" up -d postgres >/dev/null
 echo "step=compose_up_postgres status=PASS"
 
+echo "step=postgres_ready_wait"
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  if docker compose -f "${COMPOSE_FILE}" exec -T postgres \
+    pg_isready -U miniapp -d miniapp >/dev/null 2>&1; then
+    echo "postgres_ready_attempt_${i}=PASS"
+    break
+  fi
+  if [[ "${i}" -eq 10 ]]; then
+    fail "postgres readiness timeout after compose up" "db_connect"
+  fi
+  sleep 1
+done
+echo "step=postgres_ready_wait status=PASS"
+
 echo "step=tcp_check_3_of_3"
 for i in 1 2 3; do
   if timeout 2 bash -lc "</dev/tcp/localhost/5432" >/dev/null 2>&1; then
@@ -89,7 +103,7 @@ echo "step=tcp_check_3_of_3 status=PASS"
 echo "step=select_1"
 SQL_OUT_FILE="/tmp/runner06-first-sql-success.log"
 docker compose -f "${COMPOSE_FILE}" exec -T postgres \
-  psql -U miniapp -d miniapp -c "SELECT 1;" >"${SQL_OUT_FILE}"
+  psql -h localhost -U miniapp -d miniapp -c "SELECT 1;" >"${SQL_OUT_FILE}"
 echo "step=select_1 status=PASS"
 echo "unlock_signal=${SQL_OUT_FILE}"
 
