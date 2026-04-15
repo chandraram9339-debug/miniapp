@@ -35,3 +35,5 @@ Both paths use the same deterministic gate and emit:
 
 - Required check 1: `preflight` (runtime preflight gate)
 - Required check 2: `metadata-schema-validation` (runtime metadata schema gate)
+
+S2 enforcement evidence PR
